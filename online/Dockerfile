@@ -22,22 +22,24 @@ RUN yum install autoconf automake bzip2 \
 
 
 # Install gperftools
-RUN git clone https://github.com/gperftools/gperftools \
-    && cd gperftools && sh autogen.sh && ./configure && make && make install
+RUN git clone https://github.com/gperftools/gperftools && cd gperftools && sh autogen.sh && ./configure && make && make install
 
 # Install Luajit2
-RUN git clone https://github.com/openresty/luajit2 && \
-    cd luajit2 && \
-    make && make install
+RUN git clone https://github.com/openresty/luajit2 && cd luajit2 &&  make && make install
 
 # Download Tengine
-RUN cd ${DEPLOY_PATH} && wget https://github.com/alibaba/tengine/archive/${TENGINE_VERSION}.zip \
-                && unzip ${TENGINE_VERSION}.zip -d ${DEPLOY_PATH}
-
+RUN wget https://github.com/alibaba/tengine/archive/${TENGINE_VERSION}.zip  && unzip ${TENGINE_VERSION}.zip -d ${DEPLOY_PATH}
 
 #  Build Modsecurity
 RUN git clone https://github.com/SpiderLabs/ModSecurity-nginx.git ;
-RUN cd ${DEPLOY_PATH} && /bin/bash build_modsecurity.sh
+RUN https://github.com/SpiderLabs/ModSecurity.git \
+        &&  cd ModSecurity  \
+        &&  /bin/bash build.sh  \
+        && yum install -y https://archives.fedoraproject.org/pub/archive/fedora/linux/updates/23/x86_64/b/bison-3.0.4-3.fc23.x86_64.rpm \
+        &&  git submodule init  \
+        &&  git submodule update  \
+        &&  ./configure \
+        && make && make install
 
 # Main Build tengine+modsecurity
 
@@ -95,7 +97,6 @@ RUN cd tengine-${TENGINE_VERSION} && \
        --add-module=../ModSecurity-nginx && make && make install
 
 # Download owasp crs rules
-
 # RUN wget https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/modsecurity.conf-recommended && \
 #        mv modsecurity.conf-recommended  /etc/nginx/modsecurity.conf
 
@@ -114,4 +115,8 @@ RUN rm -rf ${DEPLOY_PATH}
 
 WORKDIR /root/
 USER root
+
+EXPOSE 80
+EXPOSE 8080
+
 CMD ['/usr/sbin/nginx']

@@ -21,4 +21,5 @@ cd online && docker build tengine .
 ## 安装说明和步骤
 
 - 略
+- [个人构建仓库](https://cr.console.aliyun.com/repository/cn-zhangjiakou/xx-zhang/tengine-with-modsecurity/build)
 
