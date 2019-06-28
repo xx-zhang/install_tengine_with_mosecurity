@@ -1,6 +1,8 @@
 ## 快速安装
 ```
-docker pull actanble/tengine 
+docker pull actanble/modsecurity 
+or 
+docker pull registry.cn-zhangjiakou.aliyuncs.com/xx-zhang/tengine-with-modsecurity
 ```
 
 
@@ -15,6 +17,7 @@ docker exec -t tengine /usr/sbin/nginx
 ## 自己编译
 ```
 cd online && docker build tengine . 
+
 ```
 
 
