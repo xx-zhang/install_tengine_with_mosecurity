@@ -1,5 +1,9 @@
 From centos:7
 
+MAINTAINER actanble <actanble@gmail.com>
+
+# All Libs Used Backup In https://github.com/offgithub On 2019-5-28
+
 ENV TENGINE_VERSION=2.3.0
 ENV DEPLOY_PATH=/usr/local/src/nginx_waf
 
@@ -31,6 +35,7 @@ RUN git clone https://github.com/openresty/luajit2 && cd luajit2 &&  make && mak
 RUN wget https://github.com/alibaba/tengine/archive/${TENGINE_VERSION}.zip  && unzip ${TENGINE_VERSION}.zip -d ${DEPLOY_PATH}
 
 #  Build Modsecurity
+### https://github.com/SpiderLabs/ModSecurity/wiki/Compilation-recipes-for-v3.x#centos-7-minimal-dynamic
 RUN git clone https://github.com/SpiderLabs/ModSecurity-nginx.git ;
 RUN git clone https://github.com/SpiderLabs/ModSecurity.git \
         &&  cd ModSecurity  \
@@ -109,7 +114,7 @@ RUN ln -sv `find / -type f -name "libprofiler.so*" | grep /usr/local/lib` /lib64
 RUN ln -sv `find / -type f -name "libluajit-5.1.so*" | grep /usr/local/lib` /lib64/libluajit-5.1.so.2
 RUN useradd -s /sbin/nologin -M nginx
 # Make Local Conf To Nginx Path
-RUN copy ./nginx.conf.d/*  /etc/nginx/
+RUN copy -R ./nginx.conf.d/*  /etc/nginx/
 
 RUN rm -rf ${DEPLOY_PATH}
 
