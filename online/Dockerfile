@@ -32,7 +32,7 @@ RUN wget https://github.com/alibaba/tengine/archive/${TENGINE_VERSION}.zip  && u
 
 #  Build Modsecurity
 RUN git clone https://github.com/SpiderLabs/ModSecurity-nginx.git ;
-RUN https://github.com/SpiderLabs/ModSecurity.git \
+RUN git clone https://github.com/SpiderLabs/ModSecurity.git \
         &&  cd ModSecurity  \
         &&  /bin/bash build.sh  \
         && yum install -y https://archives.fedoraproject.org/pub/archive/fedora/linux/updates/23/x86_64/b/bison-3.0.4-3.fc23.x86_64.rpm \
