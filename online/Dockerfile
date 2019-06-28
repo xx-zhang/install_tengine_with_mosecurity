@@ -114,7 +114,7 @@ RUN ln -sv `find / -type f -name "libprofiler.so*" | grep /usr/local/lib` /lib64
 RUN ln -sv `find / -type f -name "libluajit-5.1.so*" | grep /usr/local/lib` /lib64/libluajit-5.1.so.2
 RUN useradd -s /sbin/nologin -M nginx
 # Make Local Conf To Nginx Path
-RUN copy -R ./nginx.conf.d/*  /etc/nginx/
+RUN cp -R ./nginx.conf.d/*  /etc/nginx/
 
 RUN rm -rf ${DEPLOY_PATH}
 
