@@ -38,9 +38,8 @@ RUN echo -e "\033[1;31m **** 开始安装Modsecurity **** \033[0m"
 RUN echo -e "\033[1;31m **** 下载 Modsecurity-nginx **** \033[0m"
 RUN cd ${DEPLOY_PATH} && git clone https://github.com/SpiderLabs/ModSecurity-nginx.git ;
 RUN cd ${DEPLOY_PATH} && git clone https://github.com/SpiderLabs/ModSecurity \
-        &&  cd ModSecurity  \
-        &&  git checkout -b v3/master origin/v3/master 
-RUN sh build.sh  \
+        &&  cd ModSecurity \
+        && sh build.sh  \
         && yum install -y https://archives.fedoraproject.org/pub/archive/fedora/linux/updates/23/x86_64/b/bison-3.0.4-3.fc23.x86_64.rpm \
         &&  git submodule init  \
         &&  git submodule update  \
