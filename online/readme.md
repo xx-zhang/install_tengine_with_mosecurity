@@ -16,3 +16,7 @@ configure.ac: installing './ylwrap'
 5588The command '/bin/sh -c cd ${DEPLOY_PATH} && /bin/bash build_modsecurity.sh' returned a non-zero code: 1
 5589{"exitCode":8, "message":"docker build failed or timeout "}
 ```
+
+## 2019-7-5
+- 强烈推荐进入 online 安装，就是 hub 上编译的时候选择 /online 目录。
+

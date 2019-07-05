@@ -124,4 +124,6 @@ USER root
 EXPOSE 80
 EXPOSE 8080
 
-CMD ['/usr/sbin/nginx']
+COPY entrypoint.sh /usr/local/bin
+
+ENTRYPOINT ['entrypoint.sh']
