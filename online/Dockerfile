@@ -3,6 +3,8 @@ From centos:7
 ENV TENGINE_VERSION=2.3.0
 ENV DEPLOY_PATH=/usr/local/src/nginx_waf
 
+USER root
+
 RUN mkdir -p ${DEPLOY_PATH}
 
 RUN  echo -e "\033[1;31m **** 开始安装必须的前置包 **** \033[0m"
@@ -115,5 +117,8 @@ RUN ln -sv `find / -type f -name "libluajit-5.1.so*" | grep /usr/local/lib` /lib
 RUN useradd -s /sbin/nologin -M nginx
 
 RUN rm -rf ${DEPLOY_PATH}
+COPY entrypoint.sh /usr/local/bin
 
-USER root
+ENTRYPOINT ['entrypoint.sh']
+
+
