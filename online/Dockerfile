@@ -7,6 +7,8 @@ MAINTAINER actanble <actanble@gmail.com>
 ENV TENGINE_VERSION=2.3.0
 ENV DEPLOY_PATH=/usr/local/src/nginx_waf
 
+USER root
+
 RUN mkdir -p ${DEPLOY_PATH}
 ADD . ${DEPLOY_PATH}
 
@@ -117,6 +119,9 @@ RUN useradd -s /sbin/nologin -M nginx
 RUN cp -R ./nginx.conf.d/*  /etc/nginx/
 RUN cp -R ./nginx.conf.d/* /var/www/
 RUN rm -rf ${DEPLOY_PATH}
+COPY entrypoint.sh /usr/local/bin
+
+ENTRYPOINT ['entrypoint.sh']
 
 WORKDIR /root/
 USER root
@@ -127,3 +132,4 @@ EXPOSE 8080
 COPY entrypoint.sh /usr/local/bin
 
 ENTRYPOINT ['entrypoint.sh']
+
