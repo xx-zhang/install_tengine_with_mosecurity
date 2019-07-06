@@ -1,13 +1,20 @@
 From centos:7
 
+MAINTAINER actanble <actanble@gmail.com>
+
+# All Libs Used Backup In https://github.com/offgithub On 2019-5-28
+
 ENV TENGINE_VERSION=2.3.0
 ENV DEPLOY_PATH=/usr/local/src/nginx_waf
 
 USER root
 
 RUN mkdir -p ${DEPLOY_PATH}
+ADD . ${DEPLOY_PATH}
 
-RUN  echo -e "\033[1;31m **** 开始安装必须的前置包 **** \033[0m"
+WORKDIR ${DEPLOY_PATH}
+
+# Install yum-libs Deppends
 RUN yum -y install wget curl git
 RUN yum install autoconf automake bzip2 \
          flex httpd-devel libaio-devel \
@@ -20,38 +27,30 @@ RUN yum install autoconf automake bzip2 \
          perl perl-devel perl-ExtUtils-Embed redhat-rpm-config -y
 
 
-RUN echo -e "\033[1;31m **** 开始编译安装 google-gperftools **** \033[0m"
-RUN cd ${DEPLOY_PATH} && \
-    git clone https://github.com/gperftools/gperftools \
-    && cd gperftools && sh autogen.sh && ./configure && make && make install
+# Install gperftools
+RUN git clone https://github.com/gperftools/gperftools && cd gperftools && sh autogen.sh && ./configure && make && make install
 
-RUN echo -e "\033[1;31m **** 开始编译安装 luaJit2 **** \033[0m"
-RUN cd ${DEPLOY_PATH} && \
-    git clone https://github.com/openresty/luajit2 && \
-    cd luajit2 && \
-    make && make install
+# Install Luajit2
+RUN git clone https://github.com/openresty/luajit2 && cd luajit2 &&  make && make install
 
-RUN echo -e "\033[1;33m ** 准备下载 tengine-${TENGINE_VERSION} ** \033[0m"
-RUN cd ${DEPLOY_PATH} && wget https://github.com/alibaba/tengine/archive/${TENGINE_VERSION}.zip \
-                && unzip ${TENGINE_VERSION}.zip -d ${DEPLOY_PATH}
+# Download Tengine
+RUN wget https://github.com/alibaba/tengine/archive/${TENGINE_VERSION}.zip  && unzip ${TENGINE_VERSION}.zip -d ${DEPLOY_PATH}
 
-
-RUN echo -e "\033[1;31m **** 开始安装Modsecurity **** \033[0m"
-RUN echo -e "\033[1;31m **** 下载 Modsecurity-nginx **** \033[0m"
-RUN cd ${DEPLOY_PATH} && git clone https://github.com/SpiderLabs/ModSecurity-nginx.git ;
-RUN cd ${DEPLOY_PATH} && git clone https://github.com/SpiderLabs/ModSecurity \
-        &&  cd ModSecurity \
-        && sh build.sh  \
+#  Build Modsecurity
+### https://github.com/SpiderLabs/ModSecurity/wiki/Compilation-recipes-for-v3.x#centos-7-minimal-dynamic
+RUN git clone https://github.com/SpiderLabs/ModSecurity-nginx.git ;
+RUN git clone https://github.com/SpiderLabs/ModSecurity.git \
+        &&  cd ModSecurity  \
+        &&  /bin/bash build.sh  \
         && yum install -y https://archives.fedoraproject.org/pub/archive/fedora/linux/updates/23/x86_64/b/bison-3.0.4-3.fc23.x86_64.rpm \
         &&  git submodule init  \
         &&  git submodule update  \
         &&  ./configure \
         && make && make install
 
-RUN echo -e "\033[46;30m *****完成安装和下载 Nginx-Modsecurity****** \033[0m"
+# Main Build tengine+modsecurity
 
-RUN echo -e "\033[1;31m **** 开始编译安装结合 tengine+modsecurity **** \033[0m"
-RUN cd  ${DEPLOY_PATH}/tengine-${TENGINE_VERSION} && \
+RUN cd tengine-${TENGINE_VERSION} && \
     ./configure --prefix=/usr/share/nginx \
        --with-http_lua_module \
        --with-luajit-lib=/usr/local/lib/ \
@@ -104,21 +103,33 @@ RUN cd  ${DEPLOY_PATH}/tengine-${TENGINE_VERSION} && \
        --with-ld-opt="-Wl,-z,relro -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -Wl,-E"  \
        --add-module=../ModSecurity-nginx && make && make install
 
-RUN echo -e "\033[46;30m *****下载核心规则集****** \033[0m"
-RUN wget https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/modsecurity.conf-recommended && \
-        mv modsecurity.conf-recommended  /etc/nginx/modsecurity.conf
+# Download owasp crs rules
+# RUN wget https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/modsecurity.conf-recommended && \
+#        mv modsecurity.conf-recommended  /etc/nginx/modsecurity.conf
+
 RUN wget https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v3.1.0.zip && unzip v3.1.0.zip -d /opt/
 
-RUN echo -e "\033[46;30m *****修复一些安装经常出现的错误****** \033[0m"
+RUN echo -e "\033[46;30m *****Link some Libs****** \033[0m"
 RUN mkdir -p /var/lib/nginx/tmp/;
 RUN cp ${DEPLOY_PATH}/ModSecurity/unicode.mapping /etc/nginx ;
 RUN ln -sv `find / -type f -name "libprofiler.so*" | grep /usr/local/lib` /lib64/libprofiler.so.0
 RUN ln -sv `find / -type f -name "libluajit-5.1.so*" | grep /usr/local/lib` /lib64/libluajit-5.1.so.2
 RUN useradd -s /sbin/nologin -M nginx
-
+# Make Local Conf To Nginx Path
+RUN cp -R ./nginx.conf.d/*  /etc/nginx/
+RUN cp -R ./nginx.conf.d/* /var/www/
 RUN rm -rf ${DEPLOY_PATH}
 COPY entrypoint.sh /usr/local/bin
 
 ENTRYPOINT ['entrypoint.sh']
 
+WORKDIR /root/
+USER root
+
+EXPOSE 80
+EXPOSE 8080
+
+COPY entrypoint.sh /usr/local/bin
+
+ENTRYPOINT ['entrypoint.sh']
 
