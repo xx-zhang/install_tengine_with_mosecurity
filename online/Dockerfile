@@ -101,10 +101,6 @@ RUN cd tengine-${TENGINE_VERSION} && \
        --with-ld-opt="-Wl,-z,relro -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -Wl,-E"  \
        --add-module=../ModSecurity-nginx && make && make install
 
-# Download owasp crs rules
-# RUN wget https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/modsecurity.conf-recommended && \
-#        mv modsecurity.conf-recommended  /etc/nginx/modsecurity.conf
-
 RUN wget https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v3.1.0.zip && unzip v3.1.0.zip -d /opt/
 
 RUN echo -e "\033[46;30m *****Link some Libs****** \033[0m"
@@ -123,5 +119,6 @@ USER root
 
 EXPOSE 80
 EXPOSE 8080
+EXPOSE 443
 
 CMD ['/usr/sbin/nginx']
