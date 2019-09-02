@@ -2,8 +2,17 @@ From centos:7
 
 MAINTAINER actanble <actanble@gmail.com>
 
-# All Libs Used Backup In https://github.com/offgithub On 2019-5-28
+# 设置编码
+ENV LANG en_US.UTF-8
+# 同步时间
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN curl -o /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
+RUN sed -i -e '/mirrors.cloud.aliyuncs.com/d' -e '/mirrors.aliyuncs.com/d' /etc/yum.repos.d/CentOS-Base.repo
+RUN curl -o /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
+RUN yum makecache
 
+# All Libs Used Backup In https://github.com/offgithub On 2019-5-28
 ENV TENGINE_VERSION=2.3.0
 ENV DEPLOY_PATH=/usr/local/src/nginx_waf
 
@@ -23,7 +32,6 @@ RUN yum install autoconf automake bzip2 \
          openssl-devel geoip geoip-devel gcc-c++ \
          gd-devel GeoIP GeoIP-devel GeoIP-data libxml2 libxml2-dev zlib-devel \
          perl perl-devel perl-ExtUtils-Embed redhat-rpm-config -y
-
 
 # Install gperftools
 RUN git clone https://github.com/gperftools/gperftools && cd gperftools && sh autogen.sh && ./configure && make && make install
@@ -120,5 +128,7 @@ USER root
 EXPOSE 80
 EXPOSE 8080
 EXPOSE 443
+
+#HEALTHCHECK --interval=5m --timeout=3s CMD nginx || curl -f http://localhost/ || exit 1
 
 CMD ['/usr/sbin/nginx']

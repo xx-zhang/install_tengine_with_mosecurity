@@ -1,0 +1,22 @@
+version: "2.2"
+
+services:
+   tengine:
+      container_name: test1
+      image: 'registry.cn-hangzhou.aliyuncs.com/xxzhang/tengine-with-modsecurity:v0.1'
+      restart: always
+      ports:
+        - "3380:80"
+        - "13380:8080"
+      volumes:
+        - /spool/log/:/spool/log/
+        - /etc/localtime:/etc/localtime:ro
+        - ./nginx.conf.d/nginx.conf:/etc/nginx.conf
+        - ./nginx.conf.d/help.conf:/etc/nginx/help.conf
+        - ./nginx.conf.d/vhosts:/etc/nginx/vhosts
+      command: nginx
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://127.0.0.1:80"/, "||", "nginx"]
+        interval: 2m
+        timeout: 10s
+        retries: 3
