@@ -120,6 +120,11 @@ RUN useradd -s /sbin/nologin -M nginx
 # Make Local Conf To Nginx Path
 RUN cp -R ./nginx.conf.d/*  /etc/nginx/
 RUN cp -R ./nginx.conf.d/* /var/www/
+
+# Add Supervisord Replaced tini
+RUN yum -y install supervisor
+COPY supervisor_ngx.conf /etc/supervisord.conf
+
 RUN rm -rf ${DEPLOY_PATH}
 
 WORKDIR /root/
@@ -128,7 +133,5 @@ USER root
 EXPOSE 80
 EXPOSE 8080
 EXPOSE 443
-
 #HEALTHCHECK --interval=5m --timeout=3s CMD nginx || curl -f http://localhost/ || exit 1
-
-CMD ['/usr/sbin/nginx']
+CMD ["/usr/bin/supervisord"]
