@@ -16,3 +16,20 @@ configure.ac: installing './ylwrap'
 5588The command '/bin/sh -c cd ${DEPLOY_PATH} && /bin/bash build_modsecurity.sh' returned a non-zero code: 1
 5589{"exitCode":8, "message":"docker build failed or timeout "}
 ```
+
+## Runed in a line 
+```bash
+docker run -itd -p 32180:80 -p 35280:8080 \
+-v /spool/log/:/spool/log/ \
+-v /etc/localtime:/etc/localtime:ro \
+-v $(pwd)/nginx.conf.d/nginx.conf:/etc/nginx.conf \
+-v $(pwd)/nginx.conf.d/help.conf:/etc/nginx/help.conf \
+-v $(pwd)/nginx.conf.d/vhosts:/etc/nginx/vhosts \
+  --restart=always --name=waf \
+  registry.cn-hangzhou.aliyuncs.com/xxzhang/tengine-with-modsecurity:v0.1 \
+  /bin/bash
+  
+```
+
+## [关联日志处理](https://github.com/xx-sec/tengine-mosecruity-logdev)
+- https://github.com/xx-sec/tengine-mosecruity-logdev
