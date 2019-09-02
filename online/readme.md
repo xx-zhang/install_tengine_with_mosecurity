@@ -25,10 +25,19 @@ docker run -itd -p 32180:80 -p 35280:8080 \
 -v $(pwd)/nginx.conf.d/nginx.conf:/etc/nginx.conf \
 -v $(pwd)/nginx.conf.d/help.conf:/etc/nginx/help.conf \
 -v $(pwd)/nginx.conf.d/vhosts:/etc/nginx/vhosts \
+-v $(pwd)/nginx.conf.d/modsecurity.conf:/etc/nginx/modsecurity.conf \
   --restart=always --name=waf \
   registry.cn-hangzhou.aliyuncs.com/xxzhang/tengine-with-modsecurity:v0.1 \
   /bin/bash
-  
+
+docker run -itd -p 32180:80 -p 35280:8080 \
+-v /spool/log/:/spool/log/ \
+-v /etc/localtime:/etc/localtime:ro \
+-v /etc/nginx:/etc/nginx \
+--restart=always --name=waf \
+  registry.cn-hangzhou.aliyuncs.com/xxzhang/tengine-with-modsecurity:v0.1 \
+  /bin/bash
+
 ```
 
 ## [关联日志处理](https://github.com/xx-sec/tengine-mosecruity-logdev)

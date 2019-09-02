@@ -109,7 +109,8 @@ RUN cd tengine-${TENGINE_VERSION} && \
        --with-ld-opt="-Wl,-z,relro -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -Wl,-E"  \
        --add-module=../ModSecurity-nginx && make && make install
 
-RUN wget https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v3.1.0.zip && unzip v3.1.0.zip -d /opt/
+RUN wget https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v3.1.0.zip && unzip v3.1.0.zip -d /opt/ && \
+mv /opt/owasp-modsecurity-crs-3.1.0 /opt/owasp-modsecurity-crs
 
 RUN echo -e "\033[46;30m *****Link some Libs****** \033[0m"
 RUN mkdir -p /var/lib/nginx/tmp/;
@@ -126,7 +127,8 @@ RUN yum -y install supervisor
 COPY supervisor_ngx.conf /etc/supervisord.conf
 
 RUN rm -rf ${DEPLOY_PATH}
-
+# Add Default Conf Log Dir
+RUN mkdir -p /spool/log/nginx
 WORKDIR /root/
 USER root
 
@@ -134,4 +136,4 @@ EXPOSE 80
 EXPOSE 8080
 EXPOSE 443
 #HEALTHCHECK --interval=5m --timeout=3s CMD nginx || curl -f http://localhost/ || exit 1
-CMD ["/usr/bin/supervisord"]
+CMD ["/usr/bin/supervisord", '-c', '/etc/supervisord.conf']
