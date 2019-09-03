@@ -48,3 +48,7 @@ docker run -itd -p 32180:80 -p 35280:8080 \
 ## 2019-9-3
 > 由于需要对接WAF平台到管控设备，所以修改了WAF相关配置策略。
 - 当前Dockerfile修改为从supervisord启动。
+=======
+## 2019-7-5
+- 强烈推荐进入 online 安装，就是 hub 上编译的时候选择 /online 目录。
+
