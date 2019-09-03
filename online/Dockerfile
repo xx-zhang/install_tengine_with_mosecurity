@@ -136,4 +136,4 @@ EXPOSE 80
 EXPOSE 8080
 EXPOSE 443
 #HEALTHCHECK --interval=5m --timeout=3s CMD nginx || curl -f http://localhost/ || exit 1
-CMD ["/usr/bin/supervisord", '-c', '/etc/supervisord.conf']
+CMD ["supervisord", '-c', '/etc/supervisord.conf']
