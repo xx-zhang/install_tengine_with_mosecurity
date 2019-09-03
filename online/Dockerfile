@@ -2,8 +2,17 @@ From centos:7
 
 MAINTAINER actanble <actanble@gmail.com>
 
-# All Libs Used Backup In https://github.com/offgithub On 2019-5-28
+# 设置编码
+ENV LANG en_US.UTF-8
+# 同步时间
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN curl -o /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
+RUN sed -i -e '/mirrors.cloud.aliyuncs.com/d' -e '/mirrors.aliyuncs.com/d' /etc/yum.repos.d/CentOS-Base.repo
+RUN curl -o /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
+RUN yum makecache
 
+# All Libs Used Backup In https://github.com/offgithub On 2019-5-28
 ENV TENGINE_VERSION=2.3.0
 ENV DEPLOY_PATH=/usr/local/src/nginx_waf
 
@@ -23,7 +32,6 @@ RUN yum install autoconf automake bzip2 \
          openssl-devel geoip geoip-devel gcc-c++ \
          gd-devel GeoIP GeoIP-devel GeoIP-data libxml2 libxml2-dev zlib-devel \
          perl perl-devel perl-ExtUtils-Embed redhat-rpm-config -y
-
 
 # Install gperftools
 RUN git clone https://github.com/gperftools/gperftools && cd gperftools && sh autogen.sh && ./configure && make && make install
@@ -101,11 +109,8 @@ RUN cd tengine-${TENGINE_VERSION} && \
        --with-ld-opt="-Wl,-z,relro -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -Wl,-E"  \
        --add-module=../ModSecurity-nginx && make && make install
 
-# Download owasp crs rules
-# RUN wget https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/modsecurity.conf-recommended && \
-#        mv modsecurity.conf-recommended  /etc/nginx/modsecurity.conf
-
-RUN wget https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v3.1.0.zip && unzip v3.1.0.zip -d /opt/
+RUN wget https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v3.1.0.zip && unzip v3.1.0.zip -d /opt/ && \
+mv /opt/owasp-modsecurity-crs-3.1.0 /opt/owasp-modsecurity-crs
 
 RUN echo -e "\033[46;30m *****Link some Libs****** \033[0m"
 RUN mkdir -p /var/lib/nginx/tmp/;
@@ -116,17 +121,20 @@ RUN useradd -s /sbin/nologin -M nginx
 # Make Local Conf To Nginx Path
 RUN cp -R ./nginx.conf.d/*  /etc/nginx/
 RUN cp -R ./nginx.conf.d/* /var/www/
-RUN rm -rf ${DEPLOY_PATH}
 
+# Add Supervisord Replaced tini
+RUN yum -y install supervisor
+COPY supervisor_ngx.conf /etc/supervisord.conf
+
+RUN rm -rf ${DEPLOY_PATH}
+# Add Default Conf Log Dir
+RUN mkdir -p /spool/log/nginx
 WORKDIR /root/
 USER root
 
 EXPOSE 80
 EXPOSE 8080
+EXPOSE 443
+#HEALTHCHECK --interval=5m --timeout=3s CMD nginx || curl -f http://localhost/ || exit 1
+CMD ["supervisord", '-c', '/etc/supervisord.conf']
 
-ENV TINI_VERSION v0.18.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
-RUN chmod +x /tini
-ENTRYPOINT ["/tini", "-vvv", "-g", "-w", "--"]
-
-CMD ['/usr/sbin/nginx']
