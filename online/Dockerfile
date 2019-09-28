@@ -2,9 +2,8 @@ From centos:7
 
 MAINTAINER actanble <actanble@gmail.com>
 
-# 设置编码
+# TODO Set the time and lang
 ENV LANG en_US.UTF-8
-# 同步时间
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN curl -o /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
@@ -21,7 +20,7 @@ ADD . ${DEPLOY_PATH}
 
 WORKDIR ${DEPLOY_PATH}
 
-# Install yum-libs Deppends
+# TODO Install yum-libs Deppends
 RUN yum -y install wget curl git
 RUN yum install autoconf automake bzip2 \
          flex httpd-devel libaio-devel \
@@ -42,9 +41,9 @@ RUN git clone https://github.com/openresty/luajit2 && cd luajit2 &&  make && mak
 # Download Tengine
 RUN wget https://github.com/alibaba/tengine/archive/${TENGINE_VERSION}.zip  && unzip ${TENGINE_VERSION}.zip -d ${DEPLOY_PATH}
 
-#  Build Modsecurity
-### https://github.com/SpiderLabs/ModSecurity/wiki/Compilation-recipes-for-v3.x#centos-7-minimal-dynamic
-RUN git clone https://github.com/SpiderLabs/ModSecurity-nginx.git ;
+# TODO Build Modsecurity
+# https://github.com/SpiderLabs/ModSecurity/wiki/Compilation-recipes-for-v3.x#centos-7-minimal-dynamic
+
 RUN git clone https://github.com/SpiderLabs/ModSecurity.git \
         &&  cd ModSecurity  \
         &&  /bin/bash build.sh  \
@@ -54,8 +53,12 @@ RUN git clone https://github.com/SpiderLabs/ModSecurity.git \
         &&  ./configure \
         && make && make install
 
-# Main Build tengine+modsecurity
+ENV MODSECURITY_INC=${DEPLOY_PATH}/ModSecurity/headers/
+ENV MODSECURITY_LIB=${DEPLOY_PATH}/ModSecurity/src/.libs/
 
+RUN git clone https://github.com/SpiderLabs/ModSecurity-nginx.git ;
+
+# TODO Main Build tengine+modsecurity
 RUN cd tengine-${TENGINE_VERSION} && \
     ./configure --prefix=/usr/share/nginx \
        --with-http_lua_module \
@@ -118,16 +121,16 @@ RUN cp ${DEPLOY_PATH}/ModSecurity/unicode.mapping /etc/nginx ;
 RUN ln -sv `find / -type f -name "libprofiler.so*" | grep /usr/local/lib` /lib64/libprofiler.so.0
 RUN ln -sv `find / -type f -name "libluajit-5.1.so*" | grep /usr/local/lib` /lib64/libluajit-5.1.so.2
 RUN useradd -s /sbin/nologin -M nginx
-# Make Local Conf To Nginx Path
+# TODO Make Local Conf To Nginx Path
 RUN cp -R ./nginx.conf.d/*  /etc/nginx/
 RUN cp -R ./nginx.conf.d/* /var/www/
 
-# Add Supervisord Replaced tini
+# TODO Add Supervisord Replaced tini
 RUN yum -y install supervisor
 COPY supervisor_ngx.conf /etc/supervisord.conf
 
 RUN rm -rf ${DEPLOY_PATH}
-# Add Default Conf Log Dir
+# TODO Add Default Conf Log Dir
 RUN mkdir -p /spool/log/nginx
 WORKDIR /root/
 USER root
@@ -135,6 +138,6 @@ USER root
 EXPOSE 80
 EXPOSE 8080
 EXPOSE 443
-#HEALTHCHECK --interval=5m --timeout=3s CMD nginx || curl -f http://localhost/ || exit 1
+# HEALTHCHECK --interval=5m --timeout=3s CMD nginx || curl -f http://localhost/ || exit 1
 CMD ["supervisord", '-c', '/etc/supervisord.conf']
 
