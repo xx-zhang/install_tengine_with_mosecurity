@@ -120,6 +120,8 @@ RUN mkdir -p /var/lib/nginx/tmp/;
 RUN cp ${DEPLOY_PATH}/ModSecurity/unicode.mapping /etc/nginx ;
 RUN ln -sv `find / -type f -name "libprofiler.so*" | grep /usr/local/lib` /lib64/libprofiler.so.0
 RUN ln -sv `find / -type f -name "libluajit-5.1.so*" | grep /usr/local/lib` /lib64/libluajit-5.1.so.2
+RUN ln -sv `find / -type f -name "libmodsecurity.so*" | grep /usr/local/` /lib64/libmodsecurity.so.3
+
 RUN useradd -s /sbin/nologin -M nginx
 # TODO Make Local Conf To Nginx Path
 RUN cp -R ./nginx.conf.d/*  /etc/nginx/
