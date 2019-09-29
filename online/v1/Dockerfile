@@ -19,6 +19,8 @@ RUN mkdir -p ${DEPLOY_PATH}
 ADD . ${DEPLOY_PATH}
 
 WORKDIR ${DEPLOY_PATH}
+# sudo yum install gcc-c++ flex bison yajl yajl-devel curl-devel curl GeoIP-devel doxygen zlib-devel
+#lmdb lmdb-devel libxml2 libxml2-devel ssdeep ssdeep-devel lua lua-devel
 
 # TODO Install yum-libs Deppends
 RUN yum -y install wget curl git
@@ -43,22 +45,18 @@ RUN wget https://github.com/alibaba/tengine/archive/${TENGINE_VERSION}.zip  && u
 
 # TODO Build Modsecurity
 # https://github.com/SpiderLabs/ModSecurity/wiki/Compilation-recipes-for-v3.x#centos-7-minimal-dynamic
+git clone --depth 1 -b v3/master --single-branch https://github.com/SpiderLabs/ModSecurity \
+    && cd ModSecurity \
+    && git submodule init \
+    && git submodule update \
+    && ./build.sh \
+    && ./configure \
+    && make \
+    && make install
 
-RUN git clone https://github.com/SpiderLabs/ModSecurity.git \
-        &&  cd ModSecurity  \
-        &&  /bin/bash build.sh  \
-        && yum install -y https://archives.fedoraproject.org/pub/archive/fedora/linux/updates/23/x86_64/b/bison-3.0.4-3.fc23.x86_64.rpm \
-        &&  git submodule init  \
-        &&  git submodule update  \
-        &&  ./configure \
-        && make && make install
+RUN git clone --depth 1 https://github.com/SpiderLabs/ModSecurity-nginx.git
 
-ENV MODSECURITY_INC=${DEPLOY_PATH}/ModSecurity/headers/
-ENV MODSECURITY_LIB=${DEPLOY_PATH}/ModSecurity/src/.libs/
-
-RUN git clone https://github.com/SpiderLabs/ModSecurity-nginx.git ;
-
-# TODO Main Build tengine+modsecurity
+# TODO Main Intall tengine
 RUN cd tengine-${TENGINE_VERSION} && \
     ./configure --prefix=/usr/share/nginx \
        --with-http_lua_module \
@@ -109,8 +107,10 @@ RUN cd tengine-${TENGINE_VERSION} && \
        --with-google_perftools_module  \
        --with-debug  \
        --with-cc-opt="-O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -m64 -mtune=generic "  \
-       --with-ld-opt="-Wl,-z,relro -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -Wl,-E"  \
-       --add-module=../ModSecurity-nginx && make && make install
+       --with-ld-opt="-Wl,-z,relro -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -Wl,-E"  && make && make install
+
+RUN cd tengine-${TENGINE_VERSION} && ./configure --with-compat --add-dynamic-module=../ModSecurity-nginx \
+    && make modules && cp objs/ngx_http_modsecurity_module.so /usr/lib64/nginx/modules
 
 RUN wget https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v3.1.0.zip && unzip v3.1.0.zip -d /opt/ && \
 mv /opt/owasp-modsecurity-crs-3.1.0 /opt/owasp-modsecurity-crs
@@ -118,15 +118,12 @@ mv /opt/owasp-modsecurity-crs-3.1.0 /opt/owasp-modsecurity-crs
 RUN echo -e "\033[46;30m *****Link some Libs****** \033[0m"
 # TODO Add Default Conf Log Dir and Temp dir
 RUN mkdir -p /var/lib/nginx/tmp/ /spool/log/nginx;
-RUN cp ${DEPLOY_PATH}/ModSecurity/unicode.mapping /etc/nginx ;
+# RUN cp ${DEPLOY_PATH}/ModSecurity/unicode.mapping /etc/nginx ;
 RUN ln -sv `find / -type f -name "libprofiler.so*" | grep /usr/local/lib` /lib64/libprofiler.so.0
 RUN ln -sv `find / -type f -name "libluajit-5.1.so*" | grep /usr/local/lib` /lib64/libluajit-5.1.so.2
-RUN ln -sv `find / -type f -name "libmodsecurity.so*" | grep /usr/local/` /lib64/libmodsecurity.so.3
+# RUN ln -sv `find / -type f -name "libmodsecurity.so*" | grep /usr/local/` /lib64/libmodsecurity.so.3
 
 RUN useradd -s /sbin/nologin -M nginx
-# TODO Make Local Conf To Nginx Path
-RUN cp -R ./nginx.conf.d/*  /etc/nginx/
-RUN cp . /var/www/
 
 # TODO Add Supervisord Replaced tini
 RUN yum -y install supervisor
@@ -136,9 +133,9 @@ RUN rm -rf ${DEPLOY_PATH}
 WORKDIR /root/
 USER root
 
+VOLUME /spool/log/
+
 EXPOSE 80
-EXPOSE 8080
-EXPOSE 443
 # HEALTHCHECK --interval=5m --timeout=3s CMD nginx || curl -f http://localhost/ || exit 1
 CMD ["supervisord", '-c', '/etc/supervisord.conf']
 
