@@ -19,8 +19,6 @@ RUN mkdir -p ${DEPLOY_PATH}
 ADD . ${DEPLOY_PATH}
 
 WORKDIR ${DEPLOY_PATH}
-# sudo yum install gcc-c++ flex bison yajl yajl-devel curl-devel curl GeoIP-devel doxygen zlib-devel
-#lmdb lmdb-devel libxml2 libxml2-devel ssdeep ssdeep-devel lua lua-devel
 
 # TODO Install yum-libs Deppends
 RUN yum -y install wget curl git
@@ -45,7 +43,8 @@ RUN wget https://github.com/alibaba/tengine/archive/${TENGINE_VERSION}.zip  && u
 
 # TODO Build Modsecurity
 # https://github.com/SpiderLabs/ModSecurity/wiki/Compilation-recipes-for-v3.x#centos-7-minimal-dynamic
-git clone --depth 1 -b v3/master --single-branch https://github.com/SpiderLabs/ModSecurity \
+
+RUN git clone --depth 1 -b v3/master --single-branch https://github.com/SpiderLabs/ModSecurity \
     && cd ModSecurity \
     && git submodule init \
     && git submodule update \
@@ -56,7 +55,7 @@ git clone --depth 1 -b v3/master --single-branch https://github.com/SpiderLabs/M
 
 RUN git clone --depth 1 https://github.com/SpiderLabs/ModSecurity-nginx.git
 
-# TODO Main Intall tengine
+# TODO Main Build tengine+modsecurity
 RUN cd tengine-${TENGINE_VERSION} && \
     ./configure --prefix=/usr/share/nginx \
        --with-http_lua_module \
@@ -107,10 +106,8 @@ RUN cd tengine-${TENGINE_VERSION} && \
        --with-google_perftools_module  \
        --with-debug  \
        --with-cc-opt="-O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -m64 -mtune=generic "  \
-       --with-ld-opt="-Wl,-z,relro -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -Wl,-E"  && make && make install
-
-RUN cd tengine-${TENGINE_VERSION} && ./configure --with-compat --add-dynamic-module=../ModSecurity-nginx \
-    && make modules && cp objs/ngx_http_modsecurity_module.so /usr/lib64/nginx/modules
+       --with-ld-opt="-Wl,-z,relro -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -Wl,-E"  \
+       --add-module=../ModSecurity-nginx && make modules && make install
 
 RUN wget https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v3.1.0.zip && unzip v3.1.0.zip -d /opt/ && \
 mv /opt/owasp-modsecurity-crs-3.1.0 /opt/owasp-modsecurity-crs
@@ -118,7 +115,7 @@ mv /opt/owasp-modsecurity-crs-3.1.0 /opt/owasp-modsecurity-crs
 RUN echo -e "\033[46;30m *****Link some Libs****** \033[0m"
 # TODO Add Default Conf Log Dir and Temp dir
 RUN mkdir -p /var/lib/nginx/tmp/ /spool/log/nginx;
-# RUN cp ${DEPLOY_PATH}/ModSecurity/unicode.mapping /etc/nginx ;
+RUN cp ${DEPLOY_PATH}/ModSecurity/unicode.mapping /etc/nginx ;
 RUN ln -sv `find / -type f -name "libprofiler.so*" | grep /usr/local/lib` /lib64/libprofiler.so.0
 RUN ln -sv `find / -type f -name "libluajit-5.1.so*" | grep /usr/local/lib` /lib64/libluajit-5.1.so.2
 # RUN ln -sv `find / -type f -name "libmodsecurity.so*" | grep /usr/local/` /lib64/libmodsecurity.so.3
@@ -133,9 +130,7 @@ RUN rm -rf ${DEPLOY_PATH}
 WORKDIR /root/
 USER root
 
-VOLUME /spool/log/
-
 EXPOSE 80
 # HEALTHCHECK --interval=5m --timeout=3s CMD nginx || curl -f http://localhost/ || exit 1
-CMD ["supervisord", '-c', '/etc/supervisord.conf']
+CMD ["/usr/bin/supervisord", '-c', '/etc/supervisord.conf']
 
