@@ -126,7 +126,7 @@ RUN ln -sv `find / -type f -name "libluajit-5.1.so*" | grep /usr/local/lib` /lib
 RUN useradd -s /sbin/nologin -M nginx
 # TODO Make Local Conf To Nginx Path
 RUN cp -R ./nginx.conf.d/*  /etc/nginx/
-RUN cp . /var/www/
+COPY . /var/www/
 
 # TODO Add Supervisord Replaced tini
 RUN yum -y install supervisor
