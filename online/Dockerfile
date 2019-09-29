@@ -121,7 +121,7 @@ RUN mkdir -p /var/lib/nginx/tmp/ /spool/log/nginx;
 RUN cp ${DEPLOY_PATH}/ModSecurity/unicode.mapping /etc/nginx ;
 RUN ln -sv `find / -type f -name "libprofiler.so*" | grep /usr/local/lib` /lib64/libprofiler.so.0
 RUN ln -sv `find / -type f -name "libluajit-5.1.so*" | grep /usr/local/lib` /lib64/libluajit-5.1.so.2
-# RUN ln -sv `find / -type f -name "libmodsecurity.so*" | grep /usr/local/` /lib64/libmodsecurity.so.3
+RUN ln -sv /usr/local/modsecurity/lib/libmodsecurity.so.3 /lib64/libmodsecurity.so.3
 
 RUN useradd -s /sbin/nologin -M nginx
 # TODO Make Local Conf To Nginx Path
@@ -136,8 +136,8 @@ RUN rm -rf ${DEPLOY_PATH}
 WORKDIR /root/
 USER root
 
-EXPOSE 80
-EXPOSE 8080
-EXPOSE 443
+# TODO 推荐多主机部署时候，这个使用的是代理管理。 --net
+# EXPOSE 80
+# EXPOSE 8080
 # HEALTHCHECK --interval=5m --timeout=3s CMD nginx || curl -f http://localhost/ || exit 1
 CMD ["/usr/bin/supervisord", '-c', '/etc/supervisord.conf']
