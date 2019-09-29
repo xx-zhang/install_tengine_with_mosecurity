@@ -12,31 +12,25 @@ RUN curl -o /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.rep
 RUN yum makecache
 
 # All Libs Used Backup In https://github.com/offgithub On 2019-5-28
-ENV OPENRESTY_VERSION=2.3.2
+ENV TENGINE_VERSION=2.3.2
 ENV DEPLOY_PATH=/nginx_waf
 
-RUN mkdir -p ${DEPLOY_PATH}
+RUN mkdir -p ${DEPLOY_PATH} /spool/log/nginx/ /var/cache/nginx/
 ADD . ${DEPLOY_PATH}
 
 WORKDIR ${DEPLOY_PATH}
 
 # TODO Install yum-libs Deppends
-RUN yum -y install wget curl git
+RUN yum -y install wget curl curl-devel git
 RUN yum install autoconf automake bzip2 \
-         flex httpd-devel libaio-devel \
+         flex httpd-devel libaio-devel yajl yajl-devel \
          libass-devel libjpeg-turbo-devel libpng12-devel \
          libtheora-devel libtool libva-devel libvdpau-devel \
          libvorbis-devel libxml2-devel libxslt-devel \
-         perl texi2html unzip zip openssl lua lua-devel \
-         openssl-devel geoip geoip-devel gcc-c++ \
-         gd-devel GeoIP GeoIP-devel GeoIP-data libxml2 libxml2-dev zlib-devel \
+         perl texi2html unzip zip openssl lua lua-devel lmdb lmdb-devel \
+         openssl-devel geoip geoip-devel ssdeep ssdeep-devel gcc-c++ \
+         gd-devel GeoIP GeoIP-devel GeoIP-data doxygen libxml2 libxml2-dev zlib-devel \
          perl perl-devel perl-ExtUtils-Embed redhat-rpm-config -y
-
-# Install gperftools
-RUN git clone https://github.com/gperftools/gperftools && cd gperftools && sh autogen.sh && ./configure && make && make install
-
-# Install Luajit2
-#RUN git clone https://github.com/openresty/luajit2 && cd luajit2 &&  make && make install
 
 # Download Tengine
 RUN wget https://github.com/alibaba/tengine/archive/${TENGINE_VERSION}.zip  && unzip ${TENGINE_VERSION}.zip -d ${DEPLOY_PATH}
@@ -53,18 +47,19 @@ RUN git clone --depth 1 -b v3/master --single-branch https://github.com/SpiderLa
     && make \
     && make install
 
+
 RUN git clone --depth 1 https://github.com/SpiderLabs/ModSecurity-nginx.git
 
 RUN cd tengine-${TENGINE_VERSION} && ./configure --with-compat --add-dynamic-module=../ModSecurity-nginx && \
 make modules && cp objs/ngx_http_modsecurity_module.so /lib64
 
 # TODO Main Build tengine+modsecurity
-RUN cd tengine-${} && ./configure  ./configure --prefix=/etc/nginx \
+RUN cd tengine-${TENGINE_VERSION} && ./configure   ./configure --prefix=/etc/nginx \
 	 --sbin-path=/usr/sbin/nginx \
 	 --modules-path=/usr/lib64/nginx/modules \
 	 --conf-path=/etc/nginx/nginx.conf \
-	 --error-log-path=/var/log/nginx/error.log \
-	 --http-log-path=/var/log/nginx/access.log \
+	 --error-log-path=/spool/log/nginx/error.log \
+	 --http-log-path=/spool/log/nginx/access.log \
 	 --pid-path=/var/run/nginx.pid \
 	 --lock-path=/var/run/nginx.lock \
 	 --http-client-body-temp-path=/var/cache/nginx/client_temp \
@@ -97,7 +92,7 @@ RUN cd tengine-${} && ./configure  ./configure --prefix=/etc/nginx \
 	 --with-stream_ssl_module \
 	 --with-stream_ssl_preread_module \
 	 --with-cc-opt='-O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -fPIC' \
-	 --with-http_lua_module --with-ld-opt="-Wl,-rpath,$LUAJIT_LIB"
+	 --with-ld-opt='-Wl,-z,relro -Wl,-z,now -pie'
 
 
 RUN wget https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v3.1.0.zip && unzip v3.1.0.zip -d /opt/ && \
@@ -105,10 +100,10 @@ mv /opt/owasp-modsecurity-crs-3.1.0 /opt/owasp-modsecurity-crs
 
 RUN echo -e "\033[46;30m *****Link some Libs****** \033[0m"
 # TODO Add Default Conf Log Dir and Temp dir
-RUN mkdir -p /var/cache/nginx/ /spool/log/nginx;
+
 RUN cp ${DEPLOY_PATH}/ModSecurity/unicode.mapping /etc/nginx ;
-RUN ln -sv `find / -type f -name "libprofiler.so*" | grep /usr/local/lib` /lib64/libprofiler.so.0
-RUN ln -sv `find / -type f -name "libluajit-5.1.so*" | grep /usr/local/lib` /lib64/libluajit-5.1.so.2
+# RUN ln -sv `find / -type f -name "libprofiler.so*" | grep /usr/local/lib` /lib64/libprofiler.so.0
+# RUN ln -sv `find / -type f -name "libluajit-5.1.so*" | grep /usr/local/lib` /lib64/libluajit-5.1.so.2
 # RUN ln -sv `find / -type f -name "libmodsecurity.so*" | grep /usr/local/` /lib64/libmodsecurity.so.3
 
 RUN useradd -s /sbin/nologin -M nginx

@@ -23,13 +23,13 @@ WORKDIR ${DEPLOY_PATH}
 # TODO Install yum-libs Deppends
 RUN yum -y install wget curl git
 RUN yum install autoconf automake bzip2 \
-         flex httpd-devel libaio-devel \
+         flex httpd-devel libaio-devel yajl yajl-devel \
          libass-devel libjpeg-turbo-devel libpng12-devel \
          libtheora-devel libtool libva-devel libvdpau-devel \
          libvorbis-devel libxml2-devel libxslt-devel \
-         perl texi2html unzip zip openssl \
-         openssl-devel geoip geoip-devel gcc-c++ \
-         gd-devel GeoIP GeoIP-devel GeoIP-data libxml2 libxml2-dev zlib-devel \
+         perl texi2html unzip zip openssl lua lua-devel lmdb lmdb-devel \
+         openssl-devel geoip geoip-devel ssdeep ssdeep-devel gcc-c++ \
+         gd-devel GeoIP GeoIP-devel GeoIP-data doxygen libxml2 libxml2-dev zlib-devel \
          perl perl-devel perl-ExtUtils-Embed redhat-rpm-config -y
 
 # Install gperftools
@@ -121,7 +121,7 @@ RUN mkdir -p /var/lib/nginx/tmp/ /spool/log/nginx;
 RUN cp ${DEPLOY_PATH}/ModSecurity/unicode.mapping /etc/nginx ;
 RUN ln -sv `find / -type f -name "libprofiler.so*" | grep /usr/local/lib` /lib64/libprofiler.so.0
 RUN ln -sv `find / -type f -name "libluajit-5.1.so*" | grep /usr/local/lib` /lib64/libluajit-5.1.so.2
-# RUN ln -sv `find / -type f -name "libmodsecurity.so*" | grep /usr/local/` /lib64/libmodsecurity.so.3
+RUN ln -sv `find / -type f -name "libmodsecurity.so*" | grep /usr/local/` /lib64/libmodsecurity.so.3
 
 RUN useradd -s /sbin/nologin -M nginx
 # TODO Make Local Conf To Nginx Path
@@ -140,5 +140,4 @@ EXPOSE 80
 EXPOSE 8080
 EXPOSE 443
 # HEALTHCHECK --interval=5m --timeout=3s CMD nginx || curl -f http://localhost/ || exit 1
-CMD ["supervisord", '-c', '/etc/supervisord.conf']
-
+CMD ["/usr/bin/supervisord", '-c', '/etc/supervisord.conf']
