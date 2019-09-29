@@ -107,7 +107,7 @@ RUN cd tengine-${TENGINE_VERSION} && \
        --with-debug  \
        --with-cc-opt="-O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -m64 -mtune=generic "  \
        --with-ld-opt="-Wl,-z,relro -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -Wl,-E"  \
-       --add-module=../ModSecurity-nginx && make modules && make install
+       --with-compat --add-dynamic-module=../ModSecurity-nginx && make modules && make install
 
 RUN wget https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v3.1.0.zip && unzip v3.1.0.zip -d /opt/ && \
 mv /opt/owasp-modsecurity-crs-3.1.0 /opt/owasp-modsecurity-crs
