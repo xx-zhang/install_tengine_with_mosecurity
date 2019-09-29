@@ -126,7 +126,8 @@ RUN useradd -s /sbin/nologin -M nginx
 RUN yum -y install supervisor
 COPY supervisor_ngx.conf /etc/supervisord.conf
 
-RUN rm -rf ${DEPLOY_PATH}
+# Todo Save the env and not DELTE
+# RUN rm -rf ${DEPLOY_PATH}
 WORKDIR /root/
 USER root
 
