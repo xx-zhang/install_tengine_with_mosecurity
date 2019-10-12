@@ -2,9 +2,8 @@ From centos:7
 
 MAINTAINER actanble <actanble@gmail.com>
 
-# 设置编码
+# TODO Set the time and lang
 ENV LANG en_US.UTF-8
-# 同步时间
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN curl -o /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
@@ -13,7 +12,7 @@ RUN curl -o /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.rep
 RUN yum makecache
 
 # All Libs Used Backup In https://github.com/offgithub On 2019-5-28
-ENV TENGINE_VERSION=2.3.0
+ENV TENGINE_VERSION=2.3.2
 ENV DEPLOY_PATH=/usr/local/src/nginx_waf
 
 RUN mkdir -p ${DEPLOY_PATH}
@@ -21,16 +20,16 @@ ADD . ${DEPLOY_PATH}
 
 WORKDIR ${DEPLOY_PATH}
 
-# Install yum-libs Deppends
+# TODO Install yum-libs Deppends
 RUN yum -y install wget curl git
 RUN yum install autoconf automake bzip2 \
-         flex httpd-devel libaio-devel \
+         flex httpd-devel libaio-devel yajl yajl-devel \
          libass-devel libjpeg-turbo-devel libpng12-devel \
          libtheora-devel libtool libva-devel libvdpau-devel \
          libvorbis-devel libxml2-devel libxslt-devel \
-         perl texi2html unzip zip openssl \
-         openssl-devel geoip geoip-devel gcc-c++ \
-         gd-devel GeoIP GeoIP-devel GeoIP-data libxml2 libxml2-dev zlib-devel \
+         perl texi2html unzip zip openssl lua lua-devel lmdb lmdb-devel \
+         openssl-devel geoip geoip-devel ssdeep ssdeep-devel gcc-c++ \
+         gd-devel GeoIP GeoIP-devel GeoIP-data doxygen libxml2 libxml2-dev zlib-devel \
          perl perl-devel perl-ExtUtils-Embed redhat-rpm-config -y
 
 # Install gperftools
@@ -42,9 +41,9 @@ RUN git clone https://github.com/openresty/luajit2 && cd luajit2 &&  make && mak
 # Download Tengine
 RUN wget https://github.com/alibaba/tengine/archive/${TENGINE_VERSION}.zip  && unzip ${TENGINE_VERSION}.zip -d ${DEPLOY_PATH}
 
-#  Build Modsecurity
-### https://github.com/SpiderLabs/ModSecurity/wiki/Compilation-recipes-for-v3.x#centos-7-minimal-dynamic
-RUN git clone https://github.com/SpiderLabs/ModSecurity-nginx.git ;
+# TODO Build Modsecurity
+# https://github.com/SpiderLabs/ModSecurity/wiki/Compilation-recipes-for-v3.x#centos-7-minimal-dynamic
+
 RUN git clone https://github.com/SpiderLabs/ModSecurity.git \
         &&  cd ModSecurity  \
         &&  /bin/bash build.sh  \
@@ -54,8 +53,12 @@ RUN git clone https://github.com/SpiderLabs/ModSecurity.git \
         &&  ./configure \
         && make && make install
 
-# Main Build tengine+modsecurity
+ENV MODSECURITY_INC=${DEPLOY_PATH}/ModSecurity/headers/
+ENV MODSECURITY_LIB=${DEPLOY_PATH}/ModSecurity/src/.libs/
 
+RUN git clone https://github.com/SpiderLabs/ModSecurity-nginx.git ;
+
+# TODO Main Build tengine+modsecurity
 RUN cd tengine-${TENGINE_VERSION} && \
     ./configure --prefix=/usr/share/nginx \
        --with-http_lua_module \
@@ -113,28 +116,28 @@ RUN wget https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v3.1.0.zip 
 mv /opt/owasp-modsecurity-crs-3.1.0 /opt/owasp-modsecurity-crs
 
 RUN echo -e "\033[46;30m *****Link some Libs****** \033[0m"
-RUN mkdir -p /var/lib/nginx/tmp/;
+# TODO Add Default Conf Log Dir and Temp dir
+RUN mkdir -p /var/lib/nginx/tmp/ /spool/log/nginx;
 RUN cp ${DEPLOY_PATH}/ModSecurity/unicode.mapping /etc/nginx ;
 RUN ln -sv `find / -type f -name "libprofiler.so*" | grep /usr/local/lib` /lib64/libprofiler.so.0
 RUN ln -sv `find / -type f -name "libluajit-5.1.so*" | grep /usr/local/lib` /lib64/libluajit-5.1.so.2
-RUN useradd -s /sbin/nologin -M nginx
-# Make Local Conf To Nginx Path
-RUN cp -R ./nginx.conf.d/*  /etc/nginx/
-RUN cp -R ./nginx.conf.d/* /var/www/
+RUN ln -sv /usr/local/modsecurity/lib/libmodsecurity.so.3 /lib64/libmodsecurity.so.3
 
-# Add Supervisord Replaced tini
+RUN useradd -s /sbin/nologin -M nginx
+# TODO Make Local Conf To Nginx Path
+RUN cp -R ./nginx.conf.d/*  /etc/nginx/
+COPY . /var/www/
+
+# TODO Add Supervisord Replaced tini
 RUN yum -y install supervisor
 COPY supervisor_ngx.conf /etc/supervisord.conf
 
 RUN rm -rf ${DEPLOY_PATH}
-# Add Default Conf Log Dir
-RUN mkdir -p /spool/log/nginx
 WORKDIR /root/
 USER root
 
-EXPOSE 80
-EXPOSE 8080
-EXPOSE 443
-#HEALTHCHECK --interval=5m --timeout=3s CMD nginx || curl -f http://localhost/ || exit 1
-CMD ["supervisord", '-c', '/etc/supervisord.conf']
-
+# TODO 推荐多主机部署时候，这个使用的是代理管理。 --net
+# EXPOSE 80
+# EXPOSE 8080
+# HEALTHCHECK --interval=5m --timeout=3s CMD nginx || curl -f http://localhost/ || exit 1
+CMD ["/usr/bin/supervisord", '-c', '/etc/supervisord.conf']
